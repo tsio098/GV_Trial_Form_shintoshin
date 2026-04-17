@@ -30,6 +30,13 @@
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
+    .spinner-green {
+      width: 48px; height: 48px;
+      border: 4px solid #d1fae5;
+      border-top-color: #06C755;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
     .status {
       font-size: 14px;
@@ -51,7 +58,7 @@
     }
     .error-box.show { display: block; }
 
-    /* ─── GAS iframe（認証後に表示） ─── */
+    /* ─── GAS iframe ─── */
     #gas-frame {
       display: none;
       position: fixed;
@@ -62,13 +69,88 @@
     }
     #gas-frame.active { display: block; }
 
-    /* ─── ローディング画面 ─── */
+    /* ─── 認証中ローディング ─── */
     #auth-screen {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 16px;
+    }
+
+    /* ─── 友達追加パネル ─── */
+    #friend-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+    }
+    #friend-screen.show { display: flex; }
+
+    .line-icon-wrap {
+      width: 88px; height: 88px;
+      border-radius: 22px;
+      background-color: #06C755;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px rgba(6,199,85,0.3);
+    }
+
+    .friend-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #002045;
+      line-height: 1.4;
+    }
+    .friend-desc {
+      font-size: 13px;
+      color: #43474e;
+      line-height: 1.7;
+    }
+
+    .btn-line-add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px 24px;
+      background-color: #06C755;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(6,199,85,0.35);
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .btn-line-add:active { opacity: 0.8; }
+
+    .checking-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .checking-wrap.show { display: flex; }
+    .checking-text {
+      font-size: 13px;
+      color: #43474e;
+    }
+
+    .notice-box {
+      background: #f0f4fa;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 12px;
+      color: #43474e;
+      line-height: 1.6;
+      text-align: left;
+      width: 100%;
     }
   </style>
 </head>
@@ -84,6 +166,46 @@
     <div class="error-box" id="error-box"></div>
   </div>
 
+  <!-- 友達追加パネル（未フォロー時のみ表示） -->
+  <div id="friend-screen">
+    <img class="logo"
+         src="https://lh3.googleusercontent.com/d/1gsyaqDZvfGt-dRsoaCoTIUxa8GGIoEZU"
+         alt="グレイトヴォヤージュ"/>
+
+    <div class="line-icon-wrap">
+      <!-- LINE ロゴ -->
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
+        <path d="M34 17.2C34 11.115 27.732 6.2 20 6.2S6 11.115 6 17.2c0 5.418 4.808 9.956 11.3 10.813.44.095 1.04.29 1.19.667.136.342.089.878.044 1.225l-.192 1.155c-.059.342-.27 1.338 1.17.73 1.44-.61 7.768-4.574 10.6-7.83C31.966 21.674 34 19.58 34 17.2z" fill="white"/>
+      </svg>
+    </div>
+
+    <div>
+      <p class="friend-title">LINE公式アカウントを<br/>友達追加してください</p>
+    </div>
+    <p class="friend-desc">
+      体験授業の日程・持ち物・当日の連絡など<br/>重要なご案内をLINEでお届けします。<br/>まだ友達追加がお済みでない方は<br/>下のボタンから追加してください。
+    </p>
+
+    <a id="btn-add-friend" href="https://line.me/R/ti/p/@815ewwqj"
+       class="btn-line-add" onclick="onAddFriendClick(event)">
+      <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
+        <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.07 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+      </svg>
+      友達追加する
+    </a>
+
+    <!-- 友達追加後の自動検知中インジケーター -->
+    <div class="checking-wrap" id="checking-wrap">
+      <div class="spinner-green"></div>
+      <p class="checking-text">友達追加を確認中です。追加後、自動で進みます…</p>
+    </div>
+
+    <div class="notice-box">
+      友達追加後、自動でフォームに進みます。<br/>
+      しばらくしても進まない場合は、このページを閉じて再度開いてください。
+    </div>
+  </div>
+
   <!-- GASフォーム表示用 iframe -->
   <iframe id="gas-frame"></iframe>
 
@@ -93,15 +215,13 @@
     // ============================================================
 
     // ★★ 体験生フォーム用 LIFF ID に書き換えてください ★★
-    // LINE Developers Console で新しい LIFF アプリを作成し、
-    // Endpoint URL に このファイルを公開している GitHub Pages の URL を設定します
-    var LIFF_ID = '2009771008-B9WfpUBS';  // ← 変更してください
+    var LIFF_ID = '2009771008-B9WfpUBS';
 
-    // ★★ 入塾登録フォームと同じ GAS デプロイURL を使用します ★★
-    // （Code.gs に trial.html を追加して再デプロイした URL）
+    // ★★ 入塾登録フォームと同じ GAS デプロイURL ★★
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbx9IwWWsLqgJ60qo9PRiVxuJA81gCzcKf4h5JbY-4iFqxXDt2VfAjVfJLH-aOvu6ROt/exec';
 
-    var _userId = '';
+    var _userId          = '';
+    var _friendCheckTimer = null;  // ポーリング用タイマー
 
     // ============================================================
     //  UI ヘルパー
@@ -118,7 +238,6 @@
 
     // ============================================================
     //  GAS を iframe で読み込む
-    //  page=trial を付与して体験生フォームを表示
     // ============================================================
     function loadGAS(userId) {
       if (!userId) {
@@ -126,16 +245,99 @@
         return;
       }
       _userId = userId;
-      // ★ page=trial を付与することで doGet が trial.html を返す
       var url = GAS_URL + '?page=trial&uid=' + encodeURIComponent(userId);
       setStatus('フォームを読み込み中...');
 
       var frame = document.getElementById('gas-frame');
       frame.src = url;
       frame.onload = function() {
-        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('auth-screen').style.display  = 'none';
+        document.getElementById('friend-screen').classList.remove('show');
         frame.classList.add('active');
       };
+    }
+
+    // ============================================================
+    //  友達追加パネルを表示
+    // ============================================================
+    function showFriendScreen() {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('friend-screen').classList.add('show');
+    }
+
+    // ============================================================
+    //  友達追加ボタンを押したとき
+    //  → LINE友達追加ページを開き、ポーリング＋visibility変化で検知
+    // ============================================================
+    function onAddFriendClick(e) {
+      e.preventDefault();
+      window.open('https://line.me/R/ti/p/@815ewwqj', '_blank');
+
+      // 確認中インジケーターを表示
+      document.getElementById('checking-wrap').classList.add('show');
+
+      // 2秒ごとに友達状態をポーリング
+      _friendCheckTimer = setInterval(pollFriendship, 2000);
+
+      // ユーザーがLINEアプリから戻ってきたとき即座にチェック
+      document.addEventListener('visibilitychange', onVisibilityChange);
+    }
+
+    // ============================================================
+    //  定期的に友達状態を確認
+    // ============================================================
+    function pollFriendship() {
+      liff.getFriendship()
+        .then(function(result) {
+          if (result.friendFlag) {
+            stopPolling();
+            loadGAS(_userId);
+          }
+        })
+        .catch(function() {
+          // エラーが続く場合はポーリングを止めてそのままフォームへ
+          stopPolling();
+          loadGAS(_userId);
+        });
+    }
+
+    function onVisibilityChange() {
+      if (!document.hidden) {
+        pollFriendship();
+      }
+    }
+
+    function stopPolling() {
+      if (_friendCheckTimer) {
+        clearInterval(_friendCheckTimer);
+        _friendCheckTimer = null;
+      }
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    }
+
+    // ============================================================
+    //  友達状態をチェックして分岐
+    //  ・既に友達 → そのままフォームへ
+    //  ・未フォロー → 友達追加パネルを表示
+    //  ・getFriendship が使えない（Bot link feature 未設定）
+    //    → エラーを無視してフォームへ（フォールバック）
+    // ============================================================
+    function checkFriendshipAndLoad(userId) {
+      liff.getFriendship()
+        .then(function(result) {
+          if (result.friendFlag) {
+            // 既に友達 → 直接フォームへ
+            loadGAS(userId);
+          } else {
+            // 未フォロー → 友達追加パネルを表示
+            showFriendScreen();
+          }
+        })
+        .catch(function() {
+          // Bot link feature が設定されていない場合など
+          // → フォールバックとして直接フォームへ
+          loadGAS(userId);
+        });
     }
 
     // ============================================================
@@ -160,7 +362,7 @@
           var ctx = liff.getContext();
           if (ctx && ctx.userId) {
             clearTimeout(_globalTimeout);
-            loadGAS(ctx.userId);
+            checkFriendshipAndLoad(ctx.userId);
             return;
           }
         } catch(e) {}
@@ -170,7 +372,7 @@
           var tok = liff.getDecodedIDToken();
           if (tok && tok.sub) {
             clearTimeout(_globalTimeout);
-            loadGAS(tok.sub);
+            checkFriendshipAndLoad(tok.sub);
             return;
           }
         } catch(e) {}
@@ -192,7 +394,7 @@
             clearTimeout(profileTimer);
             clearTimeout(_globalTimeout);
             if (p && p.userId) {
-              loadGAS(p.userId);
+              checkFriendshipAndLoad(p.userId);
             } else {
               showError('プロフィール情報にユーザーIDが含まれていません。');
             }
