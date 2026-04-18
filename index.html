@@ -152,6 +152,22 @@
       text-align: left;
       width: 100%;
     }
+    .btn-manual-proceed {
+      display: none;
+      width: 100%;
+      padding: 14px 24px;
+      background-color: #002045;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.15s;
+    }
+    .btn-manual-proceed.show { display: block; }
+    .btn-manual-proceed:active { opacity: 0.8; }
   </style>
 </head>
 <body>
@@ -200,9 +216,13 @@
       <p class="checking-text">友達追加を確認中です。追加後、自動で進みます…</p>
     </div>
 
+    <button class="btn-manual-proceed" id="btn-manual-proceed" onclick="onManualProceed()">
+      友達追加しました → フォームに進む
+    </button>
+
     <div class="notice-box">
       友達追加後、自動でフォームに進みます。<br/>
-      しばらくしても進まない場合は、このページを閉じて再度開いてください。
+      自動で進まない場合は上のボタンをタップしてください。
     </div>
   </div>
 
@@ -276,11 +296,21 @@
       // 確認中インジケーターを表示
       document.getElementById('checking-wrap').classList.add('show');
 
+      // 10秒後に手動ボタンを表示（自動検知が動かない場合のフォールバック）
+      setTimeout(function() {
+        document.getElementById('btn-manual-proceed').classList.add('show');
+      }, 10000);
+
       // 2秒ごとに友達状態をポーリング
       _friendCheckTimer = setInterval(pollFriendship, 2000);
 
       // ユーザーがLINEアプリから戻ってきたとき即座にチェック
       document.addEventListener('visibilitychange', onVisibilityChange);
+    }
+
+    function onManualProceed() {
+      stopPolling();
+      loadGAS(_userId);
     }
 
     // ============================================================
@@ -323,6 +353,7 @@
     //    → エラーを無視してフォームへ（フォールバック）
     // ============================================================
     function checkFriendshipAndLoad(userId) {
+      _userId = userId; // ★ Fix: ここで必ずセットしておく（pollFriendship で使うため）
       liff.getFriendship()
         .then(function(result) {
           if (result.friendFlag) {
