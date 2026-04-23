@@ -210,19 +210,13 @@
       友達追加する
     </a>
 
-    <!-- 友達追加後の自動検知中インジケーター -->
-    <div class="checking-wrap" id="checking-wrap">
-      <div class="spinner-green"></div>
-      <p class="checking-text">友達追加を確認中です。追加後、自動で進みます…</p>
-    </div>
-
     <button class="btn-manual-proceed" id="btn-manual-proceed" onclick="onManualProceed()">
       友達追加しました → フォームに進む
     </button>
 
     <div class="notice-box">
-      友達追加後、自動でフォームに進みます。<br/>
-      自動で進まない場合は上のボタンをタップしてください。
+      LINE公式アカウントを友達追加したら、<br/>
+      上の「フォームに進む」ボタンをタップしてください。
     </div>
   </div>
 
@@ -238,7 +232,7 @@
     var LIFF_ID = '2009771008-B9WfpUBS';
 
     // ★★ 入塾登録フォームと同じ GAS デプロイURL ★★
-    var GAS_URL = 'https://script.google.com/macros/s/AKfycbzub7vu8rFv3hJOD6k-yxiJMextiRYSM3fqEHD9pcL7m_aAMoGp0xNCE53kBxCYU6IlvA/exec';
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbx9IwWWsLqgJ60qo9PRiVxuJA81gCzcKf4h5JbY-4iFqxXDt2VfAjVfJLH-aOvu6ROt/exec';
 
     var _userId = '';
 
@@ -291,31 +285,12 @@
     function onAddFriendClick(e) {
       e.preventDefault();
       window.open('https://line.me/R/ti/p/@815ewwqj', '_blank');
-
-      // 確認中インジケーターを表示
-      document.getElementById('checking-wrap').classList.add('show');
-
-      // 手動ボタンをすぐ表示（確実なフォールバック）
+      // 手動ボタンを表示（友達追加後、ユーザー自身がタップしてフォームへ進む）
       document.getElementById('btn-manual-proceed').classList.add('show');
-
-      // ページに戻ってきたらリロード → LIFF再初期化で最新の友達状態を取得
-      document.addEventListener('visibilitychange', onVisibilityChange);
     }
 
     function onManualProceed() {
       loadGAS(_userId);
-    }
-
-    function onVisibilityChange() {
-      if (!document.hidden) {
-        document.removeEventListener('visibilitychange', onVisibilityChange);
-        // 少し待ってからリロード（LINEサーバーの反映を待つ）
-        setTimeout(function() { location.reload(); }, 800);
-      }
-    }
-
-    function stopPolling() {
-      document.removeEventListener('visibilitychange', onVisibilityChange);
     }
 
     // ============================================================
