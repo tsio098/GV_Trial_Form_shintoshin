@@ -172,9 +172,6 @@
 </head>
 <body>
 
-  <!-- デバッグパネル（?debug=1 を URL に付けると表示） -->
-  <pre id="debug-panel" style="display:none; position:fixed; top:0; left:0; right:0; background:#fffbe6; color:#1f2937; font-size:11px; padding:10px 14px; margin:0; z-index:99999; max-height:45vh; overflow:auto; border-bottom:2px solid #f59e0b; white-space:pre-wrap; word-break:break-all; line-height:1.5; font-family:monospace;"></pre>
-
   <!-- 認証中画面 -->
   <div id="auth-screen">
     <img class="logo"
@@ -202,10 +199,10 @@
       <p class="friend-title">LINE公式アカウントを<br/>友達追加してください</p>
     </div>
     <p class="friend-desc">
-      体験授業の日程・持ち物・当日の連絡など<br/>重要なご案内をLINEでお届けします。<br/>下のボタンから友達追加してください。<br/>追加が完了するとフォームが自動で開きます。
+      体験授業の日程・持ち物・当日の連絡など<br/>重要なご案内をLINEでお届けします。<br/>まだ友達追加がお済みでない方は<br/>下のボタンから追加してください。
     </p>
 
-    <a id="btn-add-friend" href="https://line.me/R/ti/p/@815ewwqj"
+    <a id="btn-add-friend" href="https://line.me/R/ti/p/@518qcqye"
        class="btn-line-add" onclick="onAddFriendClick(event)">
       <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
         <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.07 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
@@ -218,8 +215,8 @@
     </button>
 
     <div class="notice-box">
-      ※ 友達追加が完了すると自動でフォームが開きます。<br/>
-      自動で開かない場合は、上の「フォームに進む」ボタンをタップしてください。
+      LINE公式アカウントを友達追加したら、<br/>
+      上の「フォームに進む」ボタンをタップしてください。
     </div>
   </div>
 
@@ -231,33 +228,13 @@
     //  設定
     // ============================================================
 
-    // ★★ 体験生フォーム用 LIFF ID に書き換えてください ★★
+    // ★★ 体験生フォーム用 LIFF ID ★★
     var LIFF_ID = '2009771008-B9WfpUBS';
 
-    // ★★ 入塾登録フォームと同じ GAS デプロイURL ★★
+    // ★★ GASの最新デプロイURL ★★
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbx9IwWWsLqgJ60qo9PRiVxuJA81gCzcKf4h5JbY-4iFqxXDt2VfAjVfJLH-aOvu6ROt/exec';
 
     var _userId = '';
-
-    // ============================================================
-    //  デバッグログ（?debug=1 で有効化）
-    // ============================================================
-    var DEBUG = /[?&]debug=1/.test(window.location.search);
-    var _debugLines = [];
-    function dbg(msg) {
-      var line = '[' + new Date().toLocaleTimeString('ja-JP') + '] ' + msg;
-      _debugLines.push(line);
-      if (DEBUG) {
-        var p = document.getElementById('debug-panel');
-        if (p) {
-          p.style.display = 'block';
-          p.textContent = _debugLines.join('\n');
-          p.scrollTop = p.scrollHeight;
-        }
-      }
-      try { console.log('[DBG]', msg); } catch(_){}
-    }
-    dbg('script loaded / DEBUG=' + DEBUG);
 
     // ============================================================
     //  UI ヘルパー
@@ -302,137 +279,41 @@
     }
 
     // ============================================================
-    //  友達追加完了の自動再チェック
-    //  ・visibilitychange（タブ復帰）で即チェック
-    //  ・3秒おきにポーリング（最大2分）
-    //  友達と判定されたら自動でフォームへ進む
-    // ============================================================
-    var _pollingTimer = null;
-    var _pollingCount = 0;
-
-    function onVisibilityChange() {
-      if (!document.hidden) recheckFriendship();
-    }
-
-    function startFriendshipWatchers() {
-      if (_pollingTimer) return;
-      document.addEventListener('visibilitychange', onVisibilityChange);
-      _pollingCount = 0;
-      _pollingTimer = setInterval(function() {
-        _pollingCount++;
-        if (_pollingCount > 40) {
-          // 3秒×40 ≒ 2分でタイムアウト → 手動ボタンに任せる
-          stopFriendshipWatchers();
-          return;
-        }
-        recheckFriendship();
-      }, 3000);
-    }
-
-    function stopFriendshipWatchers() {
-      if (_pollingTimer) {
-        clearInterval(_pollingTimer);
-        _pollingTimer = null;
-      }
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    }
-
-    function recheckFriendship() {
-      if (typeof liff === 'undefined' || typeof liff.getFriendship !== 'function') return;
-      liff.getFriendship()
-        .then(function(result) {
-          if (result && result.friendFlag) {
-            stopFriendshipWatchers();
-            loadGAS(_userId);
-          }
-        })
-        .catch(function() { /* 一時的なエラーは無視して次回ポーリング */ });
-    }
-
-    // ============================================================
     //  友達追加ボタンを押したとき
-    //  → liff.openWindow で外部ブラウザ/LINE 友達追加画面を開く
-    //    （window.open より LINE in-app ブラウザでの挙動が安定）
-    //  → 自動再チェックを開始（戻ってきたら即フォームへ進める）
     // ============================================================
     function onAddFriendClick(e) {
       e.preventDefault();
-      var addUrl = 'https://line.me/R/ti/p/@518qcqye';
-      try {
-        if (typeof liff !== 'undefined' && typeof liff.openWindow === 'function') {
-          liff.openWindow({ url: addUrl, external: true });
-        } else {
-          window.open(addUrl, '_blank');
-        }
-      } catch (_) {
-        window.open(addUrl, '_blank');
-      }
-      // 手動ボタンも併せて表示（自動検知が効かない場合のフォールバック）
+      window.open('https://line.me/R/ti/p/@518qcqye', '_blank');
+      // 手動ボタンを表示（友達追加後、ユーザー自身がタップしてフォームへ進む）
       document.getElementById('btn-manual-proceed').classList.add('show');
-      // 自動再チェック開始
-      startFriendshipWatchers();
     }
 
-    // ============================================================
-    //  手動「フォームに進む」ボタン
-    //   念のためサーバーに友達状態を問い合わせて、確認できた時のみ進む
-    //   （Bot link feature 未設定で確認できない場合はそのまま進ませる）
-    // ============================================================
     function onManualProceed() {
-      if (typeof liff === 'undefined' || typeof liff.getFriendship !== 'function') {
-        loadGAS(_userId);
-        return;
-      }
-      liff.getFriendship()
-        .then(function(r) {
-          if (r && r.friendFlag) {
-            stopFriendshipWatchers();
-            loadGAS(_userId);
-          } else {
-            alert('まだ友達追加が確認できません。LINEアプリで友達追加が完了しているかご確認ください。');
-          }
-        })
-        .catch(function() {
-          // フォールバック（確認できないが UX 優先で進ませる）
-          stopFriendshipWatchers();
-          loadGAS(_userId);
-        });
+      loadGAS(_userId);
     }
 
     // ============================================================
     //  友達状態をチェックして分岐
-    //  ・既に友達       → そのままフォームへ
-    //  ・未フォロー     → 友達追加パネルを表示
+    //  ・既に友達 → そのままフォームへ
+    //  ・未フォロー → 友達追加パネルを表示
     //  ・getFriendship が使えない（Bot link feature 未設定）
-    //    → 安全側に倒して友達追加パネルを表示
-    //      ※ LINE Developers コンソールで該当 LIFF アプリの
-    //         「Bot link feature」を ON にすると正確に判定できます。
+    //    → エラーを無視してフォームへ（フォールバック）
     // ============================================================
     function checkFriendshipAndLoad(userId) {
-      _userId = userId;
-      dbg('checkFriendshipAndLoad: userId=' + (userId || '').slice(0,8) + '...');
-      dbg('typeof liff.getFriendship = ' + typeof liff.getFriendship);
-      if (typeof liff.getFriendship !== 'function') {
-        dbg('!! getFriendship が関数ではない → 安全側で友達追加画面表示');
-        showFriendScreen();
-        return;
-      }
+      _userId = userId; // ★ Fix: ここで必ずセットしておく（pollFriendship で使うため）
       liff.getFriendship()
         .then(function(result) {
-          dbg('getFriendship 成功 → ' + JSON.stringify(result));
-          if (result && result.friendFlag) {
-            dbg('分岐: 友達済み → フォーム表示');
+          if (result.friendFlag) {
+            // 既に友達 → 直接フォームへ
             loadGAS(userId);
           } else {
-            dbg('分岐: 未フォロー → 友達追加画面表示');
+            // 未フォロー → 友達追加パネルを表示
             showFriendScreen();
           }
         })
-        .catch(function(err) {
-          dbg('getFriendship 失敗: ' + (err && err.message ? err.message : err)
-              + ' (code=' + (err && err.code) + ')');
-          dbg('分岐: catch → 友達追加画面表示');
-          showFriendScreen();
+        .catch(function() {
+          // Bot link feature 未設定などのエラー → フォールバックでそのまま進む
+          loadGAS(userId);
         });
     }
 
@@ -443,12 +324,9 @@
       showError('認証がタイムアウトしました。<br/>LINEアプリを再起動してお試しください。');
     }, 15000);
 
-    dbg('liff.init 開始 / LIFF_ID=' + LIFF_ID);
     liff.init({ liffId: LIFF_ID })
       .then(function() {
-        dbg('liff.init OK / isLoggedIn=' + liff.isLoggedIn() + ' / isInClient=' + (typeof liff.isInClient === 'function' ? liff.isInClient() : '?'));
         if (!liff.isLoggedIn()) {
-          dbg('未ログイン → liff.login()');
           setStatus('LINEログインへ移動...');
           liff.login();
           return;
@@ -459,24 +337,22 @@
         // 方法1: getContext()
         try {
           var ctx = liff.getContext();
-          dbg('getContext: ' + (ctx ? 'type=' + ctx.type + ' userId=' + (ctx.userId ? ctx.userId.slice(0,8) + '...' : 'null') : 'null'));
           if (ctx && ctx.userId) {
             clearTimeout(_globalTimeout);
             checkFriendshipAndLoad(ctx.userId);
             return;
           }
-        } catch(e) { dbg('getContext error: ' + e.message); }
+        } catch(e) {}
 
         // 方法2: getDecodedIDToken()
         try {
           var tok = liff.getDecodedIDToken();
-          dbg('getDecodedIDToken: ' + (tok ? 'sub=' + (tok.sub ? tok.sub.slice(0,8) + '...' : 'null') : 'null'));
           if (tok && tok.sub) {
             clearTimeout(_globalTimeout);
             checkFriendshipAndLoad(tok.sub);
             return;
           }
-        } catch(e) { dbg('getDecodedIDToken error: ' + e.message); }
+        } catch(e) {}
 
         // 方法3: getProfile()（8秒タイムアウト）
         var profileDone = false;
