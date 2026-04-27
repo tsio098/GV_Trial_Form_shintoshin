@@ -4,10 +4,8 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>GV — 体験授業お申し込み</title>
-
   <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -97,7 +95,6 @@
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 8px 24px rgba(6,199,85,0.3);
     }
-
     .friend-title {
       font-size: 20px;
       font-weight: 800;
@@ -109,7 +106,6 @@
       color: #43474e;
       line-height: 1.7;
     }
-
     .btn-line-add {
       display: flex;
       align-items: center;
@@ -137,11 +133,11 @@
       gap: 10px;
     }
     .checking-wrap.show { display: flex; }
+
     .checking-text {
       font-size: 13px;
       color: #43474e;
     }
-
     .notice-box {
       background: #f0f4fa;
       border-radius: 12px;
@@ -168,10 +164,24 @@
     }
     .btn-manual-proceed.show { display: block; }
     .btn-manual-proceed:active { opacity: 0.8; }
+
+    /* ─── 既に友達ですエスケープボタン ─── */
+    .btn-already-friend {
+      width: 100%;
+      padding: 14px 24px;
+      background: transparent;
+      color: #002045;
+      font-size: 14px;
+      font-weight: 700;
+      border: 1.5px solid #002045;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-already-friend:active { opacity: 0.7; }
   </style>
 </head>
 <body>
-
   <!-- 認証中画面 -->
   <div id="auth-screen">
     <img class="logo"
@@ -187,21 +197,18 @@
     <img class="logo"
          src="https://lh3.googleusercontent.com/d/1Ecr278PF9Qw_OfV5s3GjOPGpiiBIHPAH"
          alt="GV"/>
-
     <div class="line-icon-wrap">
       <!-- LINE ロゴ -->
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
         <path d="M34 17.2C34 11.115 27.732 6.2 20 6.2S6 11.115 6 17.2c0 5.418 4.808 9.956 11.3 10.813.44.095 1.04.29 1.19.667.136.342.089.878.044 1.225l-.192 1.155c-.059.342-.27 1.338 1.17.73 1.44-.61 7.768-4.574 10.6-7.83C31.966 21.674 34 19.58 34 17.2z" fill="white"/>
       </svg>
     </div>
-
     <div>
       <p class="friend-title">LINE公式アカウントを<br/>友達追加してください</p>
     </div>
     <p class="friend-desc">
       体験授業の日程・持ち物・当日の連絡など<br/>重要なご案内をLINEでお届けします。<br/>まだ友達追加がお済みでない方は<br/>下のボタンから追加してください。
     </p>
-
     <a id="btn-add-friend" href="https://line.me/R/ti/p/@518qcqye"
        class="btn-line-add" onclick="onAddFriendClick(event)">
       <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
@@ -209,11 +216,12 @@
       </svg>
       友達追加する
     </a>
-
     <button class="btn-manual-proceed" id="btn-manual-proceed" onclick="onManualProceed()">
       友達追加しました → フォームに進む
     </button>
-
+    <button type="button" class="btn-already-friend" onclick="onAlreadyFriend()">
+      既に友達追加しています → フォームに進む
+    </button>
     <div class="notice-box">
       LINE公式アカウントを友達追加したら、<br/>
       上の「フォームに進む」ボタンをタップしてください。
@@ -227,11 +235,10 @@
     // ============================================================
     //  設定
     // ============================================================
-
     // ★★ 体験生フォーム用 LIFF ID ★★
     var LIFF_ID = '2009771008-B9WfpUBS';
 
-    // ★★ GASの最新デプロイURL ★★
+    // ★★ GASの最新デプロイURL ★★（aOvu6ROt は capital O）
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbx9IwWWsLqgJ60qo9PRiVxuJA81gCzcKf4h5JbY-4iFqxXDt2VfAjVfJLH-aOvu6ROt/exec';
 
     var _userId = '';
@@ -260,7 +267,6 @@
       _userId = userId;
       var url = GAS_URL + '?page=trial&uid=' + encodeURIComponent(userId);
       setStatus('フォームを読み込み中...');
-
       var frame = document.getElementById('gas-frame');
       frame.src = url;
       frame.onload = function() {
@@ -292,27 +298,32 @@
       loadGAS(_userId);
     }
 
+    // 「既に友達です」エスケープ用
+    // Bot link feature が未設定だと友達でも friendFlag=false を返すため、
+    // ユーザー自身でフォームに進めるようにする
+    function onAlreadyFriend() {
+      loadGAS(_userId);
+    }
+
     // ============================================================
     //  友達状態をチェックして分岐
-    //  ・既に友達 → そのままフォームへ
-    //  ・未フォロー → 友達追加パネルを表示
-    //  ・getFriendship が使えない（Bot link feature 未設定）
-    //    → エラーを無視してフォームへ（フォールバック）
+    //  ・friendFlag === true → そのままフォームへ
+    //  ・friendFlag === false → 友達追加パネルを表示
+    //      （Bot link feature 未設定で false 誤判定のときも、
+    //       「既に友達です → フォームに進む」ボタンで救済可能）
+    //  ・catch（API 不可）→ フォームへフォールバック
     // ============================================================
     function checkFriendshipAndLoad(userId) {
-      _userId = userId; // ★ Fix: ここで必ずセットしておく（pollFriendship で使うため）
+      _userId = userId;
       liff.getFriendship()
         .then(function(result) {
           if (result.friendFlag) {
-            // 既に友達 → 直接フォームへ
             loadGAS(userId);
           } else {
-            // 未フォロー → 友達追加パネルを表示
             showFriendScreen();
           }
         })
         .catch(function() {
-          // Bot link feature 未設定などのエラー → フォールバックでそのまま進む
           loadGAS(userId);
         });
     }
@@ -331,7 +342,6 @@
           liff.login();
           return;
         }
-
         setStatus('ユーザー情報を取得中...');
 
         // 方法1: getContext()
@@ -389,6 +399,5 @@
         showError('LIFF初期化エラー: ' + err.message + '<br/>LINEアプリから開いているか確認してください。');
       });
   </script>
-
 </body>
 </html>
