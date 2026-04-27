@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>グレイトヴォヤージュ — 体験授業お申し込み</title>
+  <title>GV — 体験授業お申し込み</title>
 
   <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -175,8 +175,8 @@
   <!-- 認証中画面 -->
   <div id="auth-screen">
     <img class="logo"
-         src="https://lh3.googleusercontent.com/d/1gsyaqDZvfGt-dRsoaCoTIUxa8GGIoEZU"
-         alt="グレイトヴォヤージュ"/>
+         src="https://lh3.googleusercontent.com/d/1Ecr278PF9Qw_OfV5s3GjOPGpiiBIHPAH"
+         alt="GV"/>
     <div class="spinner" id="spinner"></div>
     <p class="status" id="status">認証中...</p>
     <div class="error-box" id="error-box"></div>
@@ -185,8 +185,8 @@
   <!-- 友達追加パネル（未フォロー時のみ表示） -->
   <div id="friend-screen">
     <img class="logo"
-         src="https://lh3.googleusercontent.com/d/1gsyaqDZvfGt-dRsoaCoTIUxa8GGIoEZU"
-         alt="グレイトヴォヤージュ"/>
+         src="https://lh3.googleusercontent.com/d/1Ecr278PF9Qw_OfV5s3GjOPGpiiBIHPAH"
+         alt="GV"/>
 
     <div class="line-icon-wrap">
       <!-- LINE ロゴ -->
@@ -199,7 +199,7 @@
       <p class="friend-title">LINE公式アカウントを<br/>友達追加してください</p>
     </div>
     <p class="friend-desc">
-      体験授業の日程・持ち物・当日の連絡など<br/>重要なご案内をLINEでお届けします。<br/>まだ友達追加がお済みでない方は<br/>下のボタンから追加してください。
+      体験授業の日程・持ち物・当日の連絡など<br/>重要なご案内をLINEでお届けします。<br/>下のボタンから友達追加してください。<br/>追加が完了するとフォームが自動で開きます。
     </p>
 
     <a id="btn-add-friend" href="https://line.me/R/ti/p/@815ewwqj"
@@ -215,8 +215,8 @@
     </button>
 
     <div class="notice-box">
-      LINE公式アカウントを友達追加したら、<br/>
-      上の「フォームに進む」ボタンをタップしてください。
+      ※ 友達追加が完了すると自動でフォームが開きます。<br/>
+      自動で開かない場合は、上の「フォームに進む」ボタンをタップしてください。
     </div>
   </div>
 
@@ -232,7 +232,7 @@
     var LIFF_ID = '2009771008-B9WfpUBS';
 
     // ★★ 入塾登録フォームと同じ GAS デプロイURL ★★
-    var GAS_URL = 'https://script.google.com/macros/s/AKfycbx9IwWWsLqgJ60qo9PRiVxuJA81gCzcKf4h5JbY-4iFqxXDt2VfAjVfJLH-aOvu6ROt/exec';
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbx9IwWWsLqgJ60qo9PRiVxuJA81gCzcKf4h5JbY-4iFqxXDt2VfAjVfJLH-a0vu6R0t/exec';
 
     var _userId = '';
 
@@ -279,32 +279,117 @@
     }
 
     // ============================================================
+    //  友達追加完了の自動再チェック
+    //  ・visibilitychange（タブ復帰）で即チェック
+    //  ・3秒おきにポーリング（最大2分）
+    //  友達と判定されたら自動でフォームへ進む
+    // ============================================================
+    var _pollingTimer = null;
+    var _pollingCount = 0;
+
+    function onVisibilityChange() {
+      if (!document.hidden) recheckFriendship();
+    }
+
+    function startFriendshipWatchers() {
+      if (_pollingTimer) return;
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      _pollingCount = 0;
+      _pollingTimer = setInterval(function() {
+        _pollingCount++;
+        if (_pollingCount > 40) {
+          // 3秒×40 ≒ 2分でタイムアウト → 手動ボタンに任せる
+          stopFriendshipWatchers();
+          return;
+        }
+        recheckFriendship();
+      }, 3000);
+    }
+
+    function stopFriendshipWatchers() {
+      if (_pollingTimer) {
+        clearInterval(_pollingTimer);
+        _pollingTimer = null;
+      }
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    }
+
+    function recheckFriendship() {
+      if (typeof liff === 'undefined' || typeof liff.getFriendship !== 'function') return;
+      liff.getFriendship()
+        .then(function(result) {
+          if (result && result.friendFlag) {
+            stopFriendshipWatchers();
+            loadGAS(_userId);
+          }
+        })
+        .catch(function() { /* 一時的なエラーは無視して次回ポーリング */ });
+    }
+
+    // ============================================================
     //  友達追加ボタンを押したとき
-    //  → LINE友達追加ページを開き、ポーリング＋visibility変化で検知
+    //  → liff.openWindow で外部ブラウザ/LINE 友達追加画面を開く
+    //    （window.open より LINE in-app ブラウザでの挙動が安定）
+    //  → 自動再チェックを開始（戻ってきたら即フォームへ進める）
     // ============================================================
     function onAddFriendClick(e) {
       e.preventDefault();
-      window.open('https://line.me/R/ti/p/@518qcqye', '_blank');
-      // 手動ボタンを表示（友達追加後、ユーザー自身がタップしてフォームへ進む）
+      var addUrl = 'https://line.me/R/ti/p/@518qcqye';
+      try {
+        if (typeof liff !== 'undefined' && typeof liff.openWindow === 'function') {
+          liff.openWindow({ url: addUrl, external: true });
+        } else {
+          window.open(addUrl, '_blank');
+        }
+      } catch (_) {
+        window.open(addUrl, '_blank');
+      }
+      // 手動ボタンも併せて表示（自動検知が効かない場合のフォールバック）
       document.getElementById('btn-manual-proceed').classList.add('show');
+      // 自動再チェック開始
+      startFriendshipWatchers();
     }
 
+    // ============================================================
+    //  手動「フォームに進む」ボタン
+    //   念のためサーバーに友達状態を問い合わせて、確認できた時のみ進む
+    //   （Bot link feature 未設定で確認できない場合はそのまま進ませる）
+    // ============================================================
     function onManualProceed() {
-      loadGAS(_userId);
+      if (typeof liff === 'undefined' || typeof liff.getFriendship !== 'function') {
+        loadGAS(_userId);
+        return;
+      }
+      liff.getFriendship()
+        .then(function(r) {
+          if (r && r.friendFlag) {
+            stopFriendshipWatchers();
+            loadGAS(_userId);
+          } else {
+            alert('まだ友達追加が確認できません。LINEアプリで友達追加が完了しているかご確認ください。');
+          }
+        })
+        .catch(function() {
+          // フォールバック（確認できないが UX 優先で進ませる）
+          stopFriendshipWatchers();
+          loadGAS(_userId);
+        });
     }
 
     // ============================================================
     //  友達状態をチェックして分岐
-    //  ・既に友達 → そのままフォームへ
-    //  ・未フォロー → 友達追加パネルを表示
+    //  ・既に友達       → そのままフォームへ
+    //  ・未フォロー     → 友達追加パネルを表示
     //  ・getFriendship が使えない（Bot link feature 未設定）
-    //    → エラーを無視してフォームへ（フォールバック）
+    //    → 安全側に倒して友達追加パネルを表示
+    //      ※ LINE Developers コンソールで該当 LIFF アプリの
+    //         「Bot link feature」を ON にすると正確に判定できます。
     // ============================================================
     function checkFriendshipAndLoad(userId) {
-      _userId = userId; // ★ Fix: ここで必ずセットしておく（pollFriendship で使うため）
+      _userId = userId;
       liff.getFriendship()
         .then(function(result) {
-          if (result.friendFlag) {
+          if (result && result.friendFlag) {
             // 既に友達 → 直接フォームへ
             loadGAS(userId);
           } else {
@@ -313,9 +398,8 @@
           }
         })
         .catch(function() {
-          // Bot link feature が設定されていない場合など
-          // → フォールバックとして直接フォームへ
-          loadGAS(userId);
+          // 確認できない場合は安全側に倒して友達追加パネルを表示
+          showFriendScreen();
         });
     }
 
