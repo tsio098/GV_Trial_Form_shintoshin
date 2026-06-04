@@ -55,7 +55,6 @@
       line-height: 1.6;
     }
     .error-box.show { display: block; }
-
     /* ─── GAS iframe ─── */
     #gas-frame {
       display: none;
@@ -66,7 +65,6 @@
       z-index: 100;
     }
     #gas-frame.active { display: block; }
-
     /* ─── 認証中ローディング ─── */
     #auth-screen {
       display: flex;
@@ -75,7 +73,6 @@
       justify-content: center;
       gap: 16px;
     }
-
     /* ─── 友達追加パネル ─── */
     #friend-screen {
       display: none;
@@ -87,7 +84,6 @@
       text-align: center;
     }
     #friend-screen.show { display: flex; }
-
     .line-icon-wrap {
       width: 88px; height: 88px;
       border-radius: 22px;
@@ -125,7 +121,6 @@
       transition: opacity 0.15s;
     }
     .btn-line-add:active { opacity: 0.8; }
-
     .checking-wrap {
       display: none;
       flex-direction: column;
@@ -133,7 +128,6 @@
       gap: 10px;
     }
     .checking-wrap.show { display: flex; }
-
     .checking-text {
       font-size: 13px;
       color: #43474e;
@@ -164,7 +158,6 @@
     }
     .btn-manual-proceed.show { display: block; }
     .btn-manual-proceed:active { opacity: 0.8; }
-
     /* ─── 既に友達ですエスケープボタン ─── */
     .btn-already-friend {
       width: 100%;
@@ -191,7 +184,6 @@
     <p class="status" id="status">認証中...</p>
     <div class="error-box" id="error-box"></div>
   </div>
-
   <!-- 友達追加パネル（未フォロー時のみ表示） -->
   <div id="friend-screen">
     <img class="logo"
@@ -227,21 +219,42 @@
       上の「フォームに進む」ボタンをタップしてください。
     </div>
   </div>
-
   <!-- GASフォーム表示用 iframe -->
   <iframe id="gas-frame"></iframe>
-
   <script>
     // ============================================================
     //  設定
     // ============================================================
     // ★★ 体験生フォーム用 LIFF ID ★★
     var LIFF_ID = '2009910682-lj4J0qZL';
-
-    // ★★ GASの最新デプロイURL ★★（aOvu6ROt は capital O）
+    // ★★ GASの最新デプロイURL ★★
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbw3b5T-vTbJDy_9o582ZXvz-4EJCUbdTKW7ObIWZ2XlUaqZAoCZSj8533ypHq834rdU/exec';
-
     var _userId = '';
+
+    // ============================================================
+    //  開封ビーコン
+    //   QRを踏んでこのLIFFページを開いた瞬間に1発GASへ送る。
+    //   LINEログイン完了前でも記録されるので「ログインせず離脱した人」も拾える。
+    //   ・Imageビーコン(GET)なのでCORS不要・レスポンス不要
+    //   ・LINEログインのリダイレクト往復で二重計上しないよう sessionStorage で1回に制限
+    //   ・src を引き継ぐ: QRに ...?src=チラシA を付けて開けば流入元も記録
+    // ============================================================
+    (function sendOpenBeacon() {
+      try {
+        var qs  = new URLSearchParams(window.location.search);
+        var src = qs.get('src') || '';
+        var fire = function() {
+          var url = GAS_URL + '?action=ping&ev=open&t=' + Date.now()
+                  + (src ? '&src=' + encodeURIComponent(src) : '');
+          new Image().src = url;
+        };
+        if (window.sessionStorage && sessionStorage.getItem('gv_open_logged')) return;
+        if (window.sessionStorage) sessionStorage.setItem('gv_open_logged', '1');
+        fire();
+      } catch (_) {
+        try { new Image().src = GAS_URL + '?action=ping&ev=open&t=' + Date.now(); } catch (e2) {}
+      }
+    })();
 
     // ============================================================
     //  UI ヘルパー
@@ -255,7 +268,6 @@
       errBox.innerHTML = msg || '読み込みに失敗しました。<br/>LINEアプリからもう一度開き直してください。';
       errBox.classList.add('show');
     }
-
     // ============================================================
     //  GAS を iframe で読み込む
     // ============================================================
@@ -275,7 +287,6 @@
         frame.classList.add('active');
       };
     }
-
     // ============================================================
     //  友達追加パネルを表示
     // ============================================================
@@ -283,7 +294,6 @@
       document.getElementById('auth-screen').style.display = 'none';
       document.getElementById('friend-screen').classList.add('show');
     }
-
     // ============================================================
     //  友達追加ボタンを押したとき
     // ============================================================
@@ -293,25 +303,22 @@
       // 手動ボタンを表示（友達追加後、ユーザー自身がタップしてフォームへ進む）
       document.getElementById('btn-manual-proceed').classList.add('show');
     }
-
     function onManualProceed() {
       loadGAS(_userId);
     }
-
     // 「既に友達です」エスケープ用
     // Bot link feature が未設定だと友達でも friendFlag=false を返すため、
     // ユーザー自身でフォームに進めるようにする
     function onAlreadyFriend() {
       loadGAS(_userId);
     }
-
     // ============================================================
     //  友達状態をチェックして分岐
-    //  ・friendFlag === true → そのままフォームへ
+    //  ・friendFlag === true  → そのままフォームへ
     //  ・friendFlag === false → 友達追加パネルを表示
     //      （Bot link feature 未設定で false 誤判定のときも、
     //       「既に友達です → フォームに進む」ボタンで救済可能）
-    //  ・catch（API 不可）→ フォームへフォールバック
+    //  ・catch（API 不可）   → フォームへフォールバック
     // ============================================================
     function checkFriendshipAndLoad(userId) {
       _userId = userId;
@@ -327,14 +334,12 @@
           loadGAS(userId);
         });
     }
-
     // ============================================================
     //  LIFF 初期化 & userId 取得
     // ============================================================
     var _globalTimeout = setTimeout(function() {
       showError('認証がタイムアウトしました。<br/>LINEアプリを再起動してお試しください。');
     }, 15000);
-
     liff.init({ liffId: LIFF_ID })
       .then(function() {
         if (!liff.isLoggedIn()) {
@@ -343,7 +348,6 @@
           return;
         }
         setStatus('ユーザー情報を取得中...');
-
         // 方法1: getContext()
         try {
           var ctx = liff.getContext();
@@ -353,7 +357,6 @@
             return;
           }
         } catch(e) {}
-
         // 方法2: getDecodedIDToken()
         try {
           var tok = liff.getDecodedIDToken();
@@ -363,7 +366,6 @@
             return;
           }
         } catch(e) {}
-
         // 方法3: getProfile()（8秒タイムアウト）
         var profileDone = false;
         var profileTimer = setTimeout(function() {
@@ -373,7 +375,6 @@
             showError('ユーザー情報の取得がタイムアウトしました。<br/>LINEアプリを再起動してお試しください。');
           }
         }, 8000);
-
         liff.getProfile()
           .then(function(p) {
             if (profileDone) return;
