@@ -231,36 +231,40 @@
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbw3b5T-vTbJDy_9o582ZXvz-4EJCUbdTKW7ObIWZ2XlUaqZAoCZSj8533ypHq834rdU/exec';
     var _userId = '';
 
+    // QRに ?src=チラシA を付けておくと流入元として記録できる
+    var _src = (new URLSearchParams(window.location.search)).get('src') || '';
+    var _friendLogged = false;
+
     // ============================================================
-    //  開封ビーコン
-    //   QRを踏んでこのLIFFページを開いた瞬間に1発GASへ送る。
-    //   LINEログイン完了前でも記録されるので「ログインせず離脱した人」も拾える。
-    //   ・navigator.sendBeacon を使用 → liff.login() の同意画面リダイレクトで
-    //     ページが遷移しても送信が保証される(Imageビーコンの送信前キャンセルを回避)
-    //   ・sendBeacon 非対応環境のみ Image ビーコンにフォールバック
-    //   ・リダイレクト往復での二重計上は sessionStorage で1回に制限
-    //   ・src を引き継ぐ: QRに ...?src=チラシA を付けて開けば流入元も記録
+    //  アクセス記録ビーコン
+    //   ・navigator.sendBeacon を使用 → ページ遷移後も送信が保証される
+    //     (Imageビーコンの送信前キャンセルを回避)。非対応時のみ Image にフォールバック
+    //   ・ev はコードで送り、日本語ラベルへの変換は GAS 側(EV_LABELS)で行う
+    //       open=友達登録画面表示 / friend=友達登録完了
     // ============================================================
-    (function sendOpenBeacon() {
+    function gvBeacon(ev, uid) {
       try {
-        var qs  = new URLSearchParams(window.location.search);
-        var src = qs.get('src') || '';
-        if (window.sessionStorage && sessionStorage.getItem('gv_open_logged')) return;
-        if (window.sessionStorage) sessionStorage.setItem('gv_open_logged', '1');
-
-        var url = GAS_URL + '?action=ping&ev=open&t=' + Date.now()
-                + (src ? '&src=' + encodeURIComponent(src) : '');
-
+        var url = GAS_URL + '?action=ping&ev=' + encodeURIComponent(ev) + '&t=' + Date.now()
+                + (uid  ? '&uid=' + encodeURIComponent(uid) : '')
+                + (_src ? '&src=' + encodeURIComponent(_src) : '');
         var sent = false;
         if (navigator && typeof navigator.sendBeacon === 'function') {
-          sent = navigator.sendBeacon(url);   // POST。遷移後も送信保証
+          sent = navigator.sendBeacon(url);
         }
-        if (!sent) {
-          new Image().src = url;              // フォールバック(GET)
-        }
+        if (!sent) { new Image().src = url; }
       } catch (_) {
-        try { new Image().src = GAS_URL + '?action=ping&ev=open&t=' + Date.now(); } catch (e2) {}
+        try { new Image().src = GAS_URL + '?action=ping&ev=' + encodeURIComponent(ev) + '&t=' + Date.now(); } catch (e2) {}
       }
+    }
+
+    // ① 友達登録画面表示（ページ読込時に1回。同意を許可して中に入った全員）
+    //    LINEログインのリダイレクト往復での二重計上は sessionStorage で防止
+    (function logOpen() {
+      try {
+        if (window.sessionStorage && sessionStorage.getItem('gv_open_logged')) return;
+        if (window.sessionStorage) sessionStorage.setItem('gv_open_logged', '1');
+      } catch (_) {}
+      gvBeacon('open');
     })();
 
     // ============================================================
@@ -284,6 +288,8 @@
         return;
       }
       _userId = userId;
+      // ② 友達登録完了（友達確認OKでフォームへ進む。1回だけ記録）
+      if (!_friendLogged) { _friendLogged = true; gvBeacon('friend', userId); }
       var url = GAS_URL + '?page=trial&uid=' + encodeURIComponent(userId);
       setStatus('フォームを読み込み中...');
       var frame = document.getElementById('gas-frame');
