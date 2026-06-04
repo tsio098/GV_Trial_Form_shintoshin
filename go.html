@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>新都心校 体験授業お申し込み</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans JP', 'Hiragino Sans', sans-serif;
+      background: #f6faff; color: #171c20;
+      min-height: 100dvh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px; padding: 24px; text-align: center;
+    }
+    .logo { width: 160px; height: auto; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid #e4e9ee; border-top-color: #002045;
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .msg { font-size: 14px; color: #43474e; line-height: 1.7; }
+    .btn {
+      display: none; margin-top: 8px;
+      padding: 14px 28px; background: #06C755; color: #fff;
+      font-size: 16px; font-weight: 700; border: none; border-radius: 14px;
+      text-decoration: none; box-shadow: 0 4px 16px rgba(6,199,85,.35);
+    }
+    .btn.show { display: inline-block; }
+  </style>
+</head>
+<body>
+  <img class="logo" src="https://lh3.googleusercontent.com/d/1Ecr278PF9Qw_OfV5s3GjOPGpiiBIHPAH" alt="GV"/>
+  <div class="spinner"></div>
+  <p class="msg" id="msg">LINEを開いています…</p>
+  <a class="btn" id="btn" href="#">LINEで開く</a>
+
+  <script>
+    // ============================================================
+    //  QR中継ページ（go.html）
+    //   QRの飛び先をこのページにすることで、LINEの同意画面より「前」に
+    //   ブラウザでアクセスを記録できる（同意画面で離脱する人も拾える）。
+    //   記録後、本来のLIFF URLへ自動転送する。
+    // ============================================================
+    // ★ GASの最新デプロイURL（index.html と同じものに揃える）
+    var GAS_URL  = 'https://script.google.com/macros/s/AKfycbw3b5T-vTbJDy_9o582ZXvz-4EJCUbdTKW7ObIWZ2XlUaqZAoCZSj8533ypHq834rdU/exec';
+    // ★ 体験生フォーム用 LIFF ID（index.html の LIFF_ID と同じ）
+    var LIFF_ID  = '2009910682-lj4J0qZL';
+
+    // QRに ?src=チラシA を付けておくと流入元として記録＆LIFFへ引き継ぐ
+    var src = (new URLSearchParams(location.search)).get('src') || '';
+
+    // 転送先（LIFF URL）。srcがあれば引き継ぐ
+    var LIFF_URL = 'https://liff.line.me/' + LIFF_ID + (src ? ('?src=' + encodeURIComponent(src)) : '');
+
+    // ── アクセス記録（ev=scan = QRを踏んだ瞬間）──
+    (function logScan() {
+      try {
+        var url = GAS_URL + '?action=ping&ev=scan&t=' + Date.now()
+                + (src ? '&src=' + encodeURIComponent(src) : '');
+        var sent = false;
+        if (navigator && typeof navigator.sendBeacon === 'function') {
+          sent = navigator.sendBeacon(url);   // 遷移後も送信保証
+        }
+        if (!sent) { new Image().src = url; } // フォールバック
+      } catch (_) {
+        try { new Image().src = GAS_URL + '?action=ping&ev=scan&t=' + Date.now(); } catch (e2) {}
+      }
+    })();
+
+    // ── LIFFへ自動転送 ──
+    //   sendBeaconは同期的にキューされるので即遷移してOK。
+    //   自動遷移がブロックされた場合に備え、少し後で手動ボタンも出す。
+    function go() { location.replace(LIFF_URL); }
+    setTimeout(go, 150);
+    setTimeout(function () {
+      var btn = document.getElementById('btn');
+      btn.href = LIFF_URL;
+      btn.classList.add('show');
+      document.getElementById('msg').textContent =
+        '自動で開かない場合は下のボタンを押してください';
+    }, 1500);
+  </script>
+</body>
+</html>
