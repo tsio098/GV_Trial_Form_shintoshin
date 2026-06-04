@@ -235,22 +235,29 @@
     //  開封ビーコン
     //   QRを踏んでこのLIFFページを開いた瞬間に1発GASへ送る。
     //   LINEログイン完了前でも記録されるので「ログインせず離脱した人」も拾える。
-    //   ・Imageビーコン(GET)なのでCORS不要・レスポンス不要
-    //   ・LINEログインのリダイレクト往復で二重計上しないよう sessionStorage で1回に制限
+    //   ・navigator.sendBeacon を使用 → liff.login() の同意画面リダイレクトで
+    //     ページが遷移しても送信が保証される(Imageビーコンの送信前キャンセルを回避)
+    //   ・sendBeacon 非対応環境のみ Image ビーコンにフォールバック
+    //   ・リダイレクト往復での二重計上は sessionStorage で1回に制限
     //   ・src を引き継ぐ: QRに ...?src=チラシA を付けて開けば流入元も記録
     // ============================================================
     (function sendOpenBeacon() {
       try {
         var qs  = new URLSearchParams(window.location.search);
         var src = qs.get('src') || '';
-        var fire = function() {
-          var url = GAS_URL + '?action=ping&ev=open&t=' + Date.now()
-                  + (src ? '&src=' + encodeURIComponent(src) : '');
-          new Image().src = url;
-        };
         if (window.sessionStorage && sessionStorage.getItem('gv_open_logged')) return;
         if (window.sessionStorage) sessionStorage.setItem('gv_open_logged', '1');
-        fire();
+
+        var url = GAS_URL + '?action=ping&ev=open&t=' + Date.now()
+                + (src ? '&src=' + encodeURIComponent(src) : '');
+
+        var sent = false;
+        if (navigator && typeof navigator.sendBeacon === 'function') {
+          sent = navigator.sendBeacon(url);   // POST。遷移後も送信保証
+        }
+        if (!sent) {
+          new Image().src = url;              // フォールバック(GET)
+        }
       } catch (_) {
         try { new Image().src = GAS_URL + '?action=ping&ev=open&t=' + Date.now(); } catch (e2) {}
       }
